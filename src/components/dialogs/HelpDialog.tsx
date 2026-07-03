@@ -5,6 +5,8 @@ import { AppState } from "../../state/AppState";
 import { useAppState } from "../../contexts/StateContext";
 import { ModalVisibilityStatus } from "../../state/ModalVisibilityStatus";
 import { ModalDialog } from "./ModalDialog";
+import { ITutorialDefinition } from "../../state/tutorials/ITutorialDefinition";
+import { tutorialDefinitions } from "../../state/tutorials";
 
 export const HelpDialog = observer(function HelpDialog(): JSX.Element {
     const appState: AppState = useAppState();
@@ -29,6 +31,13 @@ const HelpDialogBody = observer(function HelpDialogBody(props: IHelpDialogBodyPr
     const appState: AppState = props.appState;
     const version: string | undefined = appState.uiState.buildVersion && `Version: ${appState.uiState.buildVersion}`;
 
+    // Starting a tutorial must also close this dialog: keyboard shortcuts and the game UI the tutorial
+    // anchors to are unavailable while a modal is open.
+    const startTutorialHandler = (definition: ITutorialDefinition): void => {
+        hideDialog(appState);
+        appState.tutorialState.start(definition);
+    };
+
     return (
         <Stack>
             <StackItem>
@@ -39,6 +48,22 @@ const HelpDialogBody = observer(function HelpDialogBody(props: IHelpDialogBodyPr
                     How to use MODAQ
                 </Link>
             </StackItem>
+            {tutorialDefinitions.length > 0 && (
+                <StackItem>
+                    <Label>Tutorials</Label>
+                </StackItem>
+            )}
+            {tutorialDefinitions.map((definition) => (
+                <StackItem key={`tutorial_${definition.title}`}>
+                    <Link
+                        {...{ "data-testid": `tutorial-${definition.title}` }}
+                        title={definition.description}
+                        onClick={() => startTutorialHandler(definition)}
+                    >
+                        {definition.title}
+                    </Link>
+                </StackItem>
+            ))}
         </Stack>
     );
 });

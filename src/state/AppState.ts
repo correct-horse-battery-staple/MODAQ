@@ -1,11 +1,13 @@
 import { assertNever } from "@fluentui/react";
 import { makeAutoObservable } from "mobx";
+import { ignore } from "mobx-sync";
 import { IStatus } from "../IStatus";
 import { ICustomExport } from "./CustomExport";
 
 import * as CustomExport from "./CustomExport";
 import * as QBJ from "../qbj/QBJ";
 import { GameState } from "./GameState";
+import { TutorialState } from "./TutorialState";
 import { UIState } from "./UIState";
 import { StatusDisplayType } from "./StatusDisplayType";
 
@@ -14,6 +16,9 @@ const minimumIntervalInMs = 5000;
 export class AppState {
     public game: GameState;
 
+    @ignore
+    public tutorialState: TutorialState;
+
     public uiState: UIState;
 
     constructor() {
@@ -21,6 +26,16 @@ export class AppState {
 
         this.game = new GameState();
         this.uiState = new UIState();
+        this.tutorialState = new TutorialState(this.uiState);
+    }
+
+    /**
+     * The GameState that gameplay UI should read from and mutate: the real game normally, or the tutorial's
+     * practice game while a tutorial is active. AppState.game itself is never reassigned by tutorial code, so it
+     * stays exactly as the user left it, and AsyncTrunk (see ModaqControl.tsx) keeps persisting only the real game.
+     */
+    public get activeGame(): GameState {
+        return this.tutorialState.isActive ? this.tutorialState.practiceGame : this.game;
     }
 
     // Could do a version with callbacks. There are 4 places this gets called from, and 3 use the same callback

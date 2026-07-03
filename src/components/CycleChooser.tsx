@@ -80,6 +80,7 @@ export const CycleChooser = observer(function CycleChooser() {
                 aria-describedby={nextButtonTooltip}
                 key="nextButton"
                 onClick={onNextClickHandler}
+                disabled={appState.tutorialState.isActive}
                 styles={nextButtonStyle}
             >
                 Export...
@@ -146,7 +147,7 @@ export const CycleChooser = observer(function CycleChooser() {
 
 function shouldNextButtonExport(appState: AppState): boolean {
     const nextCycleIndex: number = appState.uiState.cycleIndex + 1;
-    return nextCycleIndex >= appState.game.playableCycles.length;
+    return nextCycleIndex >= appState.activeGame.playableCycles.length;
 }
 
 function onProposedQuestionNumberBlur(event: React.FocusEvent<HTMLInputElement>, appState: AppState): void {
@@ -189,7 +190,7 @@ function commitCycleIndex(appState: AppState, value: string): void {
     }
 
     const propsedCycleIndex: number = parseInt(value, 10);
-    if (propsedCycleIndex >= 1 && propsedCycleIndex <= appState.game.packet.tossups.length) {
+    if (propsedCycleIndex >= 1 && propsedCycleIndex <= appState.activeGame.packet.tossups.length) {
         appState.uiState.setCycleIndex(propsedCycleIndex - 1);
     }
 

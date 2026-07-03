@@ -27,7 +27,7 @@ export const GameBar = observer(function GameBar(): JSX.Element {
     // This should pop up the new game handler
     const appState: AppState = useAppState();
     const uiState: UIState = appState.uiState;
-    const game: GameState = appState.game;
+    const game: GameState = appState.activeGame;
 
     const newGameHandler = React.useCallback(() => {
         if (appState.game.hasUpdates) {
@@ -105,6 +105,7 @@ export const GameBar = observer(function GameBar(): JSX.Element {
                   key: "newGame",
                   text: "New game",
                   iconProps: { iconName: "Add" },
+                  disabled: appState.tutorialState.isActive,
                   split: true,
                   subMenuProps: {
                       items: [
@@ -186,7 +187,7 @@ export const GameBar = observer(function GameBar(): JSX.Element {
         items.push({
             key: "export",
             text: appState.uiState.customExportOptions.label,
-            disabled: appState.game.cycles.length === 0,
+            disabled: appState.game.cycles.length === 0 || appState.tutorialState.isActive,
             split: true,
             onClick: handleCustomExport,
             subMenuProps: {
@@ -194,13 +195,13 @@ export const GameBar = observer(function GameBar(): JSX.Element {
                     {
                         key: "exportSubMenuItem",
                         text: appState.uiState.customExportOptions.label,
-                        disabled: appState.game.cycles.length === 0,
+                        disabled: appState.game.cycles.length === 0 || appState.tutorialState.isActive,
                         onClick: handleCustomExport,
                     },
                     {
                         key: "downloadJson",
                         text: "Backup to JSON...",
-                        disabled: appState.game.cycles.length === 0,
+                        disabled: appState.game.cycles.length === 0 || appState.tutorialState.isActive,
                         onClick: () => {
                             appState.uiState.dialogState.showExportToJsonDialog();
                         },
@@ -238,7 +239,7 @@ function getActionSubMenuItems(
 ): ICommandBarItemProps[] {
     const items: ICommandBarItemProps[] = [];
     const uiState: UIState = appState.uiState;
-    const game: GameState = appState.game;
+    const game: GameState = appState.activeGame;
 
     const playerManagementSection: ICommandBarItemProps = getPlayerManagementSubMenuItems(
         appState,
@@ -267,10 +268,10 @@ function getActionSubMenuItems(
                     onClick: () =>
                         TossupQuestionController.throwOutTossup(
                             appState,
-                            appState.game.cycles[appState.uiState.cycleIndex],
-                            appState.game.getTossupIndex(appState.uiState.cycleIndex) + 1
+                            appState.activeGame.cycles[appState.uiState.cycleIndex],
+                            appState.activeGame.getTossupIndex(appState.uiState.cycleIndex) + 1
                         ),
-                    disabled: appState.game.cycles.length === 0,
+                    disabled: appState.activeGame.cycles.length === 0,
                 },
                 {
                     key: "removeBonus",
@@ -278,10 +279,10 @@ function getActionSubMenuItems(
                     onClick: () =>
                         BonusQuestionController.throwOutBonus(
                             appState,
-                            appState.game.cycles[appState.uiState.cycleIndex],
-                            appState.game.getBonusIndex(appState.uiState.cycleIndex)
+                            appState.activeGame.cycles[appState.uiState.cycleIndex],
+                            appState.activeGame.getBonusIndex(appState.uiState.cycleIndex)
                         ),
-                    disabled: appState.game.cycles.length === 0,
+                    disabled: appState.activeGame.cycles.length === 0,
                 },
             ],
         },
@@ -299,7 +300,7 @@ function getActionSubMenuItems(
                     key: "addMoreQuestions",
                     text: "Add questions...",
                     onClick: addQuestionsHandler,
-                    disabled: appState.game.cycles.length === 0,
+                    disabled: appState.activeGame.cycles.length === 0,
                 },
             ],
         },
@@ -311,7 +312,7 @@ function getActionSubMenuItems(
 
 function getExportSubMenuItems(appState: AppState): ICommandBarItemProps[] {
     const items: ICommandBarItemProps[] = [];
-    const disabled: boolean = appState.game.cycles.length === 0;
+    const disabled: boolean = appState.game.cycles.length === 0 || appState.tutorialState.isActive;
 
     items.push({
         key: "exportSheets",
@@ -341,6 +342,7 @@ function getOptionsSubMenuItems(appState: AppState): ICommandBarItemProps[] {
         {
             key: "changeFormat",
             text: "Change Format...",
+            disabled: appState.tutorialState.isActive,
             onClick: () => {
                 appState.uiState.dialogState.showCustomizeGameFormatDialog(appState.game.gameFormat);
             },
@@ -438,7 +440,7 @@ function getViewSubMenuItems(appState: AppState): ICommandBarItemProps[] {
         {
             key: "scoresheet",
             text: "Scoresheet...",
-            disabled: appState.game.cycles.length === 0,
+            disabled: appState.activeGame.cycles.length === 0,
             onClick: () => {
                 appState.uiState.dialogState.showScoresheetDialog();
             },
@@ -567,7 +569,7 @@ function getPlayerManagementSubMenuItems(
     //       existing action (sub vs join)
     //     - Should there be a color code for active players?
 
-    const gameMenuItemsDisabled: boolean = appState.game.cycles.length === 0;
+    const gameMenuItemsDisabled: boolean = appState.activeGame.cycles.length === 0;
 
     const addPlayerItem: ICommandBarItemProps = {
         key: "addNewPlayer",
@@ -800,7 +802,7 @@ function onPlayerEnterClick(
     }
 
     const appState: AppState = item.data.appState;
-    appState.game.addInactivePlayer(item.data.activePlayer, appState.uiState.cycleIndex);
+    appState.activeGame.addInactivePlayer(item.data.activePlayer, appState.uiState.cycleIndex);
 }
 
 function onProtestTossupClick(
@@ -813,7 +815,7 @@ function onProtestTossupClick(
         return;
     }
 
-    const { game, uiState } = item.data.appState;
+    const { activeGame: game, uiState } = item.data.appState;
 
     const cycle: Cycle = game.cycles[uiState.cycleIndex];
     if (cycle?.orderedBuzzes == undefined) {
@@ -839,7 +841,7 @@ function onProtestTossupClick(
 }
 
 function buildCopyTossupProtestInfoText(appState: AppState, cycle: Cycle, protest: ITossupProtestEvent): string {
-    const game: GameState = appState.game;
+    const game: GameState = appState.activeGame;
     const uiState: UIState = appState.uiState;
     const packetName: string = uiState.packetFilename != undefined ? `"${uiState.packetFilename}"` : "";
 
@@ -864,7 +866,7 @@ function buildCopyTossupProtestInfoText(appState: AppState, cycle: Cycle, protes
 }
 
 function buildCopyBonusProtestInfoText(appState: AppState, cycle: Cycle, protest: IBonusProtestEvent): string {
-    const game: GameState = appState.game;
+    const game: GameState = appState.activeGame;
     const uiState: UIState = appState.uiState;
     const packetName: string = uiState.packetFilename != undefined ? `"${uiState.packetFilename}"` : "";
     const bonus: Bonus = game.packet.bonuses[protest.questionIndex];
@@ -925,7 +927,7 @@ function onPlayerLeaveClick(
         message: `Are you sure you want to let the player "${item.data.activePlayer.name}" from team "${
             item.data.activePlayer.teamName
         }" leave the game before question #${appState.uiState.cycleIndex + 1}?`,
-        onOK: () => appState.game.cycles[appState.uiState.cycleIndex].addPlayerLeaves(item.data.activePlayer),
+        onOK: () => appState.activeGame.cycles[appState.uiState.cycleIndex].addPlayerLeaves(item.data.activePlayer),
     });
 }
 
@@ -953,7 +955,7 @@ function onSwapPlayerClick(
         return;
     }
 
-    const { uiState, game } = item.data.appState;
+    const { uiState, activeGame: game } = item.data.appState;
     const cycleIndex: number = uiState.cycleIndex;
     const halftimeIndex: number = Math.floor(game.gameFormat.regulationTossupCount / 2);
 
