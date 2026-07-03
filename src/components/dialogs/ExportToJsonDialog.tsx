@@ -113,9 +113,27 @@ const ExportToJsonDialogFooter = observer(function ExportToJsonDialogFooter(
 
     return (
         <DialogFooter>
-            <PrimaryButton text="Export game" onClick={exportHandler} href={gameHref} download={gameFilename} />
-            <PrimaryButton text="Export events" onClick={exportHandler} href={cyclesHref} download={cyclesFilename} />
-            <PrimaryButton text="Export QBJ" onClick={exportHandler} href={qbjHref} download={qbjFilename} />
+            <PrimaryButton
+                {...{ "data-testid": "export-json-game" }}
+                text="Export game"
+                onClick={exportHandler}
+                href={gameHref}
+                download={gameFilename}
+            />
+            <PrimaryButton
+                {...{ "data-testid": "export-json-events" }}
+                text="Export events"
+                onClick={exportHandler}
+                href={cyclesHref}
+                download={cyclesFilename}
+            />
+            <PrimaryButton
+                {...{ "data-testid": "export-json-qbj" }}
+                text="Export QBJ"
+                onClick={exportHandler}
+                href={qbjHref}
+                download={qbjFilename}
+            />
             <DefaultButton text="Cancel" onClick={cancelHandler} />
         </DialogFooter>
     );

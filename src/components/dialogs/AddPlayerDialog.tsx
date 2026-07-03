@@ -71,10 +71,13 @@ const AddPlayerDialogBody = observer(function AddPlayerDialogBody(props: IAddPla
     return (
         <Stack tokens={dialogStackTokens}>
             <StackItem>
-                <Dropdown label="Team" options={teamOptions} onChange={teamChangeHandler} />
+                <div data-testid="add-player-team">
+                    <Dropdown label="Team" options={teamOptions} onChange={teamChangeHandler} />
+                </div>
             </StackItem>
             <StackItem>
                 <TextField
+                    {...{ "data-testid": "add-player-name" }}
                     label="Name"
                     value={newPlayer.name}
                     required={true}

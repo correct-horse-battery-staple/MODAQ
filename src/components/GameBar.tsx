@@ -216,7 +216,11 @@ export const GameBar = observer(function GameBar(): JSX.Element {
         onClick: openHelpHandler,
     });
 
-    return <CommandBar items={items} overflowButtonProps={overflowProps} />;
+    return (
+        <div data-testid="game-bar">
+            <CommandBar items={items} overflowButtonProps={overflowProps} />
+        </div>
+    );
 });
 
 async function exportToSheets(appState: AppState): Promise<void> {

@@ -112,7 +112,7 @@ export const NewGameDialog = observer(function NewGameDialog(): JSX.Element {
                 <NewGameDialogBody appState={appState} />
             )}
             <DialogFooter>
-                <PrimaryButton text="Start" onClick={submitHandler} />
+                <PrimaryButton {...{ "data-testid": "new-game-start" }} text="Start" onClick={submitHandler} />
                 <DefaultButton text="Cancel" onClick={cancelHandler} />
             </DialogFooter>
         </Dialog>
@@ -255,6 +255,7 @@ const ManualNewGamePivotBody = observer(function ManualNewGamePivotBody(props: I
                     players={manualState.firstTeamPlayers}
                     teamNameErrorMessage={teamNameErrorMessage}
                     teamLabel="First team"
+                    testId="new-game-first-team"
                     onAddPlayerClick={addPlayerHandler}
                     onRemovePlayerClick={removePlayerHandler}
                     validateTeamName={teamNameValidationHandler}
@@ -265,6 +266,7 @@ const ManualNewGamePivotBody = observer(function ManualNewGamePivotBody(props: I
                     players={manualState.secondTeamPlayers}
                     teamNameErrorMessage={teamNameErrorMessage}
                     teamLabel="Second team"
+                    testId="new-game-second-team"
                     onAddPlayerClick={addPlayerHandler}
                     onRemovePlayerClick={removePlayerHandler}
                     validateTeamName={teamNameValidationHandler}

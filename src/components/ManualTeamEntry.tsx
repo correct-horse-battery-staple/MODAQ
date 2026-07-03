@@ -67,7 +67,12 @@ export const ManualTeamEntry = observer(function ManualTeamEntry(props: IManualT
 
     // Use a focus zone so that we only tab to a team entry instead of everything tabbable within the team entry
     return (
-        <FocusZone direction={FocusZoneDirection.vertical} className={classes.teamEntry} onKeyDown={focusZoneKeyDown}>
+        <FocusZone
+            {...(props.testId == undefined ? {} : { "data-testid": props.testId })}
+            direction={FocusZoneDirection.vertical}
+            className={classes.teamEntry}
+            onKeyDown={focusZoneKeyDown}
+        >
             <TextField
                 className={teamEntryClassName}
                 label={props.teamLabel}
@@ -267,6 +272,7 @@ export interface IManualTeamEntryProps {
     players: Player[];
     teamLabel: string;
     teamNameErrorMessage?: string;
+    testId?: string;
     onAddPlayerClick(existingPlayers: Player[]): void;
     onRemovePlayerClick(player: Player): void;
     validateTeamName(value: string): string | undefined;

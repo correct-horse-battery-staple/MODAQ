@@ -102,7 +102,7 @@ export const BonusQuestion = observer(function BonusQuestion(props: IBonusQuesti
                 ) : undefined;
 
                 return (
-                    <div className={classes.bonusContainer}>
+                    <div className={classes.bonusContainer} data-testid="bonus">
                         <BonusProtestDialog appState={props.appState} bonus={props.bonus} cycle={props.cycle} />
                         <Stack horizontal={true}>
                             <StackItem id={bonusQuestionTextId} styles={stackItemStyles}>
@@ -122,6 +122,7 @@ export const BonusQuestion = observer(function BonusQuestion(props: IBonusQuesti
                             <StackItem>
                                 <CancelButton
                                     disabled={disableThrowOutButton}
+                                    testId="throw-out-bonus"
                                     tooltip={throwOutButtonTooltip}
                                     onClick={throwOutClickHandler}
                                 />

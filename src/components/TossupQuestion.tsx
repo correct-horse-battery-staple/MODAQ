@@ -72,7 +72,7 @@ export const TossupQuestion = observer(function TossupQuestion(props: IQuestionP
 
     // Need tossuptext/answer in one container, X in the other
     return (
-        <div className={classes.tossupContainer}>
+        <div className={classes.tossupContainer} data-testid="tossup">
             <TossupProtestDialog appState={props.appState} cycle={props.cycle} />
             <div ref={tossupTextRef}>
                 <FocusZone
@@ -91,6 +91,7 @@ export const TossupQuestion = observer(function TossupQuestion(props: IQuestionP
             <div>
                 <CancelButton
                     disabled={disableThrowOutButton}
+                    testId="throw-out-tossup"
                     tooltip={throwOutButtonTooltip}
                     onClick={throwOutClickHandler}
                 />
