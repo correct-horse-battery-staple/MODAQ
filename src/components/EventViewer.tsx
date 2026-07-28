@@ -27,7 +27,7 @@ export const EventViewer = observer(function EventViewer(): JSX.Element | null {
     const activeItemChangedHandler = React.useCallback(
         (item: IEventViewerRow, index?: number) => {
             if (index != undefined) {
-                appState.uiState.setCycleIndex(index);
+                appState.uiState.selectCycleFromEventLog(index);
             }
         },
         [appState.uiState]
@@ -86,12 +86,12 @@ export const EventViewer = observer(function EventViewer(): JSX.Element | null {
         isKeySelected: () => false,
         setAllSelected: dummyFunction,
         setKeySelected: dummyFunction,
-        setIndexSelected: (index: number): void => appState.uiState.setCycleIndex(index),
+        setIndexSelected: (index: number): void => appState.uiState.selectCycleFromEventLog(index),
         selectToKey: dummyFunction,
-        selectToIndex: (index: number): void => appState.uiState.setCycleIndex(index),
+        selectToIndex: (index: number): void => appState.uiState.selectCycleFromEventLog(index),
         toggleAllSelected: dummyFunction,
         toggleKeySelected: dummyFunction,
-        toggleIndexSelected: (index: number): void => appState.uiState.setCycleIndex(index),
+        toggleIndexSelected: (index: number): void => appState.uiState.selectCycleFromEventLog(index),
         toggleRangeSelected: dummyFunction,
     };
 

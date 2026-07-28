@@ -16,6 +16,7 @@ import * as GameFormats from "../../state/GameFormats";
 import * as NewGameValidator from "../../state/NewGameValidator";
 import * as PendingNewGameUtils from "../../state/PendingNewGameUtils";
 import { AppState } from "../../state/AppState";
+import { GameEventType } from "../../state/GameEventBus";
 import { GameState } from "../../state/GameState";
 import { FilePicker } from "../FilePicker";
 import { UIState } from "../../state/UIState";
@@ -281,6 +282,9 @@ function onSubmit(appState: AppState): void {
 
     // If we've just started a new game, start at the beginning
     uiState.setCycleIndex(0);
+
+    // Raised after the reset so the CycleTo from it lands first, and GameStarted marks the completed transition
+    appState.gameEventBus.emit({ type: GameEventType.GameStarted });
 
     hideDialog(appState);
 }

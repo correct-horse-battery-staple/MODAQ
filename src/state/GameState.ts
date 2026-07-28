@@ -1,11 +1,12 @@
 import { computed, observable, action, makeObservable, when } from "mobx";
-import { format } from "mobx-sync";
+import { format, ignore } from "mobx-sync";
 
 import * as GameFormats from "./GameFormats";
 import * as PlayerUtils from "./PlayerUtils";
 import { PacketState, Bonus, Tossup } from "./PacketState";
 import { IPlayer, Player } from "./TeamState";
 import { Cycle, ICycle } from "./Cycle";
+import { GameEvent, GameEventBus } from "./GameEventBus";
 import {
     ISubstitutionEvent,
     IPlayerJoinsEvent,
@@ -45,6 +46,12 @@ export class GameState {
     @format((deserializedDate: string) => new Date(deserializedDate))
     public lastUpdate: Date | undefined;
 
+    // The app's notification channel, injected by AppState. A GameState built as a throwaway (see QBJ.fromQBJ)
+    // never gets one, which is what keeps an import from raising a storm of events. Left off the makeObservable
+    // list below so it stays non-observable.
+    @ignore
+    public eventBus: GameEventBus | undefined;
+
     constructor() {
         makeObservable(this, {
             cycles: observable,
@@ -83,6 +90,7 @@ export class GameState {
             () => {
                 for (const cycle of this.cycles) {
                     cycle.setUpdateHandler(() => this.markUpdateNeeded());
+                    cycle.setGameEventHandler(this.gameEventHandler);
                 }
             }
         );
@@ -567,9 +575,11 @@ export class GameState {
 
         if (this.cycles.length < this.packet.tossups.length) {
             const handler = () => this.markUpdateNeeded();
+            const eventHandler = this.gameEventHandler;
             for (let i = this.cycles.length; i < this.packet.tossups.length; i++) {
                 const cycle: Cycle = new Cycle();
                 cycle.setUpdateHandler(handler);
+                cycle.setGameEventHandler(eventHandler);
                 this.cycles.push(cycle);
             }
         }
@@ -603,6 +613,27 @@ export class GameState {
 
     public setCycles(cycles: Cycle[]): void {
         this.cycles = cycles;
+
+        // Wire imported/deserialized cycles. This runs after any mutations that built them, so replaying a
+        // game into a throwaway GameState (see QBJ.ts) raises no events.
+        const handler = () => this.markUpdateNeeded();
+        const eventHandler = this.gameEventHandler;
+        for (const cycle of cycles) {
+            cycle.setUpdateHandler(handler);
+            cycle.setGameEventHandler(eventHandler);
+        }
+    }
+
+    public setEventBus(bus: GameEventBus): void {
+        this.eventBus = bus;
+
+        for (const cycle of this.cycles) {
+            cycle.setGameEventHandler(this.gameEventHandler);
+        }
+    }
+
+    private get gameEventHandler(): (event: GameEvent) => void {
+        return (event: GameEvent) => this.eventBus?.emit(event);
     }
 
     public setGameFormat(gameFormat: IGameFormat): void {

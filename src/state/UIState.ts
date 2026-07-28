@@ -17,6 +17,7 @@ import { IStatus } from "../IStatus";
 import { IPendingSheet } from "./IPendingSheet";
 import { Cycle } from "./Cycle";
 import { DialogState } from "./DialogState";
+import { GameEvent, GameEventBus, GameEventType } from "./GameEventBus";
 import { IGameFormat } from "./IGameFormat";
 import { BuzzMenuState } from "./BuzzMenuState";
 import { ICustomExport } from "./CustomExport";
@@ -41,6 +42,11 @@ export class UIState {
 
     @ignore
     public dialogState: DialogState;
+
+    // The app's notification channel, injected by AppState. Optional so the many `new UIState()` sites in the
+    // tests keep working; every emit goes through the private `emit` helper, which no-ops when it is undefined.
+    @ignore
+    public eventBus: GameEventBus | undefined;
 
     public fontFamily: string;
 
@@ -133,12 +139,13 @@ export class UIState {
 
     public yappServiceUrl: string | undefined;
 
-    constructor() {
-        makeAutoObservable(this);
+    constructor(eventBus?: GameEventBus) {
+        makeAutoObservable(this, { eventBus: false });
 
+        this.eventBus = eventBus;
         this.buildVersion = undefined;
         this.cycleIndex = 0;
-        this.dialogState = new DialogState();
+        this.dialogState = new DialogState(eventBus);
         this.isEditingCycleIndex = false;
         this.selectedWordIndex = -1;
         this.buzzMenuState = {
@@ -313,6 +320,20 @@ export class UIState {
         this.fontFamily = listedFont + ", " + DefaultFontFamily;
     }
 
+    /**
+     * Sets the packet on the pending new game. The assignment used to be a raw field write inside the New Game
+     * dialog's packet-load callback; it lives here so the PacketLoaded event sits on the transition itself and
+     * is reachable from a test.
+     */
+    public setPendingNewGamePacket(packet: PacketState): void {
+        if (this.pendingNewGame == undefined) {
+            return;
+        }
+
+        this.pendingNewGame.packet = packet;
+        this.emit({ type: GameEventType.PacketLoaded });
+    }
+
     public setPendingNewGameType(type: PendingGameType): void {
         if (this.pendingNewGame != undefined) {
             this.pendingNewGame.type = type;
@@ -484,20 +505,42 @@ export class UIState {
 
     public nextCycle(): void {
         this.setCycleIndex(this.cycleIndex + 1);
+        this.emit({ type: GameEventType.NextQuestion });
     }
 
     public previousCycle(): void {
         if (this.cycleIndex > 0) {
             this.setCycleIndex(this.cycleIndex - 1);
+            this.emit({ type: GameEventType.PreviousQuestion });
         }
     }
 
+    /** Moving to a question typed into the question-number field. */
+    public jumpToCycleIndex(newIndex: number): void {
+        this.setCycleIndex(newIndex);
+        this.emit({ type: GameEventType.JumpToQuestion });
+    }
+
+    /** Moving to a question by selecting its row in the event log. */
+    public selectCycleFromEventLog(newIndex: number): void {
+        this.setCycleIndex(newIndex);
+        this.emit({ type: GameEventType.ClickLogTo });
+    }
+
+    /**
+     * Sets the cycle index without saying how. Raises the agnostic CycleTo event; the path-specific methods
+     * above layer their own event on top. Callers performing a reset as part of a larger operation (starting a
+     * new game, importing one) use this directly.
+     */
     public setCycleIndex(newIndex: number): void {
         if (newIndex >= 0) {
+            const previousIndex: number = this.cycleIndex;
             this.cycleIndex = newIndex;
 
             // Clear the selected words, since it's not relevant to the next question
             this.selectedWordIndex = -1;
+
+            this.emit({ type: GameEventType.CycleTo, from: previousIndex, to: newIndex });
         }
     }
 
@@ -751,6 +794,8 @@ export class UIState {
     public showBuzzMenu(clearSelectedWordOnClose: boolean): void {
         this.buzzMenuState.visible = true;
         this.buzzMenuState.clearSelectedWordOnClose = clearSelectedWordOnClose;
+
+        this.emit({ type: GameEventType.BuzzMenuOpened });
     }
 
     // We have to do this call here because this is where the information is available
@@ -800,5 +845,9 @@ export class UIState {
         }
 
         this.pendingSheet.sheetId = sheetId;
+    }
+
+    private emit(event: GameEvent): void {
+        this.eventBus?.emit(event);
     }
 }

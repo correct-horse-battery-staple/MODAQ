@@ -8,6 +8,7 @@ import { RenamePlayerDialogState } from "./RenamePlayerDialogState";
 import { Player } from "./TeamState";
 import { ReorderPlayersDialogState } from "./ReorderPlayersDialogState";
 import { FontDialogState } from "./FontDialogState";
+import { GameEvent, GameEventBus, GameEventType } from "./GameEventBus";
 import { ModalVisibilityStatus } from "./ModalVisibilityStatus";
 import { RenameTeamDialogState } from "./RenameTeamDialogState";
 import { ImportFromQBJDialogState } from "./ImportFromQBJDialogState";
@@ -49,9 +50,14 @@ export class DialogState {
     @ignore
     public visibleDialog: ModalVisibilityStatus;
 
-    constructor() {
-        makeAutoObservable(this);
+    // The app's notification channel, injected by UIState. Optional for the same reason it is on UIState.
+    @ignore
+    public eventBus: GameEventBus | undefined;
 
+    constructor(eventBus?: GameEventBus) {
+        makeAutoObservable(this, { eventBus: false });
+
+        this.eventBus = eventBus;
         this.addPlayerDialog = undefined;
         this.addQuestions = undefined;
         this.customizeGameFormat = undefined;
@@ -134,6 +140,8 @@ export class DialogState {
     public showAddPlayerDialog(teamName: string): void {
         this.addPlayerDialog = new AddPlayerDialogState(teamName);
         this.visibleDialog = ModalVisibilityStatus.AddPlayer;
+
+        this.emit({ type: GameEventType.DialogOpened, dialog: ModalVisibilityStatus.AddPlayer });
     }
 
     public showAddQuestionsDialog(): void {
@@ -234,5 +242,11 @@ export class DialogState {
 
     public showNewGameDialog(): void {
         this.visibleDialog = ModalVisibilityStatus.NewGame;
+
+        this.emit({ type: GameEventType.DialogOpened, dialog: ModalVisibilityStatus.NewGame });
+    }
+
+    private emit(event: GameEvent): void {
+        this.eventBus?.emit(event);
     }
 }

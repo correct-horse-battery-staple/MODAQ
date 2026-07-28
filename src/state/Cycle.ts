@@ -3,6 +3,7 @@ import { format } from "mobx-sync";
 
 import * as Events from "./Events";
 import * as PlayerUtils from "./PlayerUtils";
+import { GameEvent, GameEventType } from "./GameEventBus";
 import { IBuzzMarker } from "./IBuzzMarker";
 import { IGameFormat } from "./IGameFormat";
 import { IPlayer } from "./TeamState";
@@ -45,6 +46,10 @@ export class Cycle implements ICycle {
 
     onUpdate?: () => void;
 
+    // Mirrors onUpdate: a plain injected callback, deliberately not a bus object, so mobx-sync's JSON
+    // round-trip drops it the same way it drops onUpdate. Wired by GameState.
+    onGameEvent?: (event: GameEvent) => void;
+
     constructor(deserializedCycle?: ICycle) {
         // We don't use makeAutoObservable because there are methods like getProtestableBonusPartIndexes which aren't
         // actions
@@ -86,6 +91,7 @@ export class Cycle implements ICycle {
         // Using autorun requries checking all the events and could be called multiple times, so just use this method
         // directly instead
         this.onUpdate = undefined;
+        this.onGameEvent = undefined;
 
         if (deserializedCycle) {
             this.bonusAnswer =
@@ -246,6 +252,7 @@ export class Cycle implements ICycle {
         }
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.TossupAnswered, correct: true });
     }
 
     public addWrongBuzz(marker: IBuzzMarker, tossupIndex: number, gameFormat: IGameFormat): void {
@@ -277,6 +284,7 @@ export class Cycle implements ICycle {
         }
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.TossupAnswered, correct: false });
     }
 
     public addBonusProtest(
@@ -318,6 +326,7 @@ export class Cycle implements ICycle {
         });
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.PlayerJoined });
     }
 
     public addPlayerLeaves(outPlayer: IPlayer): void {
@@ -378,6 +387,7 @@ export class Cycle implements ICycle {
         }
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.BonusThrownOut });
     }
 
     public addThrownOutTossup(tossupIndex: number): void {
@@ -394,6 +404,7 @@ export class Cycle implements ICycle {
         this.removeCorrectBuzz();
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.TossupThrownOut });
     }
 
     public addTossupProtest(
@@ -453,6 +464,7 @@ export class Cycle implements ICycle {
         this.bonusProtests = undefined;
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.TossupAnswerRemoved });
     }
 
     public removeNewPlayerEvents(removedPlayer: IPlayer): void {
@@ -604,6 +616,7 @@ export class Cycle implements ICycle {
         this.removeTossupProtest(player.teamName);
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.TossupAnswerRemoved });
     }
 
     public setBonusPartAnswer(index: number, teamName: string, points: number): void {
@@ -618,10 +631,15 @@ export class Cycle implements ICycle {
         this.bonusAnswer.parts[index] = { teamName, points };
 
         this.updateIfNeeded();
+        this.emit({ type: GameEventType.BonusPartAnswered, partIndex: index });
     }
 
     public setUpdateHandler(handler: () => void | undefined): void {
         this.onUpdate = handler;
+    }
+
+    public setGameEventHandler(handler: (event: GameEvent) => void): void {
+        this.onGameEvent = handler;
     }
 
     private resetBonusAnswer(): void {
@@ -668,6 +686,12 @@ export class Cycle implements ICycle {
     private updateIfNeeded(): void {
         if (this.onUpdate) {
             this.onUpdate();
+        }
+    }
+
+    private emit(event: GameEvent): void {
+        if (this.onGameEvent) {
+            this.onGameEvent(event);
         }
     }
 

@@ -1,10 +1,12 @@
 import { assertNever } from "@fluentui/react";
 import { makeAutoObservable } from "mobx";
+import { ignore } from "mobx-sync";
 import { IStatus } from "../IStatus";
 import { ICustomExport } from "./CustomExport";
 
 import * as CustomExport from "./CustomExport";
 import * as QBJ from "../qbj/QBJ";
+import { GameEventBus } from "./GameEventBus";
 import { GameState } from "./GameState";
 import { UIState } from "./UIState";
 import { StatusDisplayType } from "./StatusDisplayType";
@@ -16,11 +18,21 @@ export class AppState {
 
     public uiState: UIState;
 
-    constructor() {
-        makeAutoObservable(this);
+    /**
+     * Notification channel for game events. Never observable and never persisted — see GameEventBus.
+     */
+    @ignore
+    public gameEventBus: GameEventBus;
 
+    constructor() {
+        // gameEventBus is excluded: it is a plain notification channel, and making it observable would let
+        // MobX proxy its handler list.
+        makeAutoObservable(this, { gameEventBus: false });
+
+        this.gameEventBus = new GameEventBus();
         this.game = new GameState();
-        this.uiState = new UIState();
+        this.game.setEventBus(this.gameEventBus);
+        this.uiState = new UIState(this.gameEventBus);
     }
 
     /**
